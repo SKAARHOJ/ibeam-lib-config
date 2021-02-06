@@ -43,7 +43,8 @@ func ExampleLoad() {
 		},
 	}
 
-	err := config.Load("config.toml", &config)
+	config.SetCoreName("core-template")
+	err := config.Load(&config)
 	if err != nil {
 		fmt.Println(err)
 	}
