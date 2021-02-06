@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -98,7 +97,7 @@ func Load(structure interface{}) error {
 
 	// This function generates and stores a schema (= default config plus at least one of each type)
 	if !devMode {
-		err = storeSchema(strings.TrimSuffix(filepath.Join(path, coreName))+".schema.toml", structure)
+		err = storeSchema(filepath.Join(path, coreName)+".schema.toml", structure)
 		if err != nil {
 			return fmt.Errorf("on storing schema: %w", err)
 		}
