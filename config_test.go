@@ -3,6 +3,8 @@ package config_test
 import (
 	"fmt"
 	"net"
+
+	conf "github.com/SKAARHOJ/ibeam-lib-config"
 )
 
 func ExampleLoad() {
@@ -43,8 +45,8 @@ func ExampleLoad() {
 		},
 	}
 
-	config.SetCoreName("core-template")
-	err := config.Load(&config)
+	conf.SetCoreName("core-template")
+	err := conf.Load(&config)
 	if err != nil {
 		fmt.Println(err)
 	}

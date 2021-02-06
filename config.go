@@ -84,7 +84,7 @@ func Load(structure interface{}) error {
 	// then it checks if the config exists, if not store default config
 	// Then load config
 
-	data, err := ioutil.ReadFile(filepath.Join(path, coreName)+ ".toml")
+	data, err := ioutil.ReadFile(filepath.Join(path, coreName) + ".toml")
 	if err != nil {
 		// There is a chance that file we are looking for
 		// just doesn't exist. In this case we are supposed
@@ -98,7 +98,7 @@ func Load(structure interface{}) error {
 
 	// This function generates and stores a schema (= default config plus at least one of each type)
 	if !devMode {
-		err = storeSchema(strings.TrimSuffix(filepath.Join(path, coreName)+".schema.toml", structure)
+		err = storeSchema(strings.TrimSuffix(filepath.Join(path, coreName))+".schema.toml", structure)
 		if err != nil {
 			return fmt.Errorf("on storing schema: %w", err)
 		}
