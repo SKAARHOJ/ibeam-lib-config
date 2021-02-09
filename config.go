@@ -83,21 +83,31 @@ func Load(structure interface{}) error {
 	// then it checks if the config exists, if not store default config
 	// Then load config
 
-	data, err := ioutil.ReadFile(filepath.Join(path, coreName) + ".toml")
+	// check for the config dir, create if it does not exist
+	if !devMode {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			os.Mkdir(filepath.Join(path, coreName, coreName), 0700)
+		}
+	}
+
+	baseFileName := filepath.Join(path, coreName, coreName)
+	if devMode {
+		baseFileName = filepath.Join(path, coreName)
+	}
+
+	data, err := ioutil.ReadFile(baseFileName + ".toml")
 	if err != nil {
 		// There is a chance that file we are looking for
 		// just doesn't exist. In this case we are supposed
 		// to create an empty configuration file, based on v.
-		// FIXME: LB: this inner error thing is ugly, should check file errors proeperly and handle
-		if innerErr := save(structure); innerErr != nil {
-			// Smth going on with the file system... returning error.
-			return err
+		if saveErr := save(structure); saveErr != nil {
+			return saveErr
 		}
 	}
 
 	// This function generates and stores a schema (= default config plus at least one of each type)
 	if !devMode {
-		err = storeSchema(filepath.Join(path, coreName)+".schema.toml", structure)
+		err = storeSchema(baseFileName+".schema.toml", structure)
 		if err != nil {
 			return fmt.Errorf("on storing schema: %w", err)
 		}
@@ -122,7 +132,12 @@ func save(structure interface{}) error {
 		return fmt.Errorf("on encoding toml: %w", err)
 	}
 
-	err = ioutil.WriteFile(filepath.Join(path, coreName)+".toml", buf.Bytes(), os.ModePerm)
+	baseFileName := filepath.Join(path, coreName, coreName)
+	if devMode {
+		baseFileName = filepath.Join(path, coreName)
+	}
+
+	err = ioutil.WriteFile(baseFileName+".toml", buf.Bytes(), os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("on encoding toml: %w", err)
 	}
@@ -130,6 +145,7 @@ func save(structure interface{}) error {
 	return nil
 }
 
+// SetDevMode activates the development mode path configuration
 func SetDevMode(devmode bool) {
 	devMode = devmode
 	if devMode {
@@ -137,6 +153,7 @@ func SetDevMode(devmode bool) {
 	}
 }
 
+// SetCoreName sets the name of the core and therefore the files
 func SetCoreName(corename string) {
 	coreName = corename
 }
