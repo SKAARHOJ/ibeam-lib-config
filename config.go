@@ -8,6 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
+	"unicode"
+
+	log "github.com/s00500/env_logger"
 
 	"github.com/BurntSushi/toml"
 )
@@ -22,32 +26,75 @@ func storeSchema(file string, structure interface{}) error {
 
 	extendStruct(v)
 
-	var schemaBuffer bytes.Buffer
-	e := toml.NewEncoder(&schemaBuffer)
-	err := e.Encode(structure)
-	if err != nil {
-		return err
+	if !devMode {
+		var schemaBuffer bytes.Buffer
+		e := toml.NewEncoder(&schemaBuffer)
+		err := e.Encode(structure)
+		if err != nil {
+			return err
+		}
+		return ioutil.WriteFile(file, schemaBuffer.Bytes(), 0644)
 	}
-	return ioutil.WriteFile(file, schemaBuffer.Bytes(), 0644)
+
+	return nil
 }
 
 func extendStruct(v reflect.Value) {
+
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem() // Then dereference it
 	}
+
+	tomlTagList := make([]string, 0)
+
 	for i := 0; i < v.NumField(); i++ {
+		tomlTag := v.Type().Field(i).Tag.Get("toml")
+
+		if tomlTag == "" {
+			tomlTag = v.Type().Field(i).Name
+		}
+
+		tomlTagList = append(tomlTagList, tomlTag)
+
+		if strings.HasSuffix(tomlTag, "_description") {
+			if v.Type().Field(i).Type.Name() != "string" {
+				log.Fatalf("descriptions must be strings! (failed on %s)", tomlTag)
+			}
+		}
+
+		if strings.HasSuffix(tomlTag, "_options") {
+			if v.Type().Field(i).Type.Name() != "[]string" {
+				log.Fatalf("options must be string slices (failed on %s)", tomlTag)
+			}
+		}
+
+		if strings.HasSuffix(tomlTag, "_select") {
+			if v.Type().Field(i).Type.Name() != "string" {
+				log.Fatalf("selects must be strings! (failed on %s)", tomlTag)
+			}
+		}
+
+		name := []rune(v.Type().Field(i).Name)
+		isExported := unicode.IsUpper(name[0])
+
 		switch v.Field(i).Kind() {
 		case reflect.Slice:
+			if !isExported {
+				log.Fatal("Make sure included slices are exported in the main struct (start with uppercase)")
+			}
 			extendSlice(v.Field(i))
 		case reflect.Struct:
 			extendStruct(v.Field(i))
 		case reflect.Map:
-			panic("skaarOS does not yet support maps in configs!")
+			log.Panic("skaarOS config does not support maps!")
 			// Current Rules for config:
 			// No pointers
 			// no maps
 		}
 	}
+
+	validate(tomlTagList)
+
 }
 
 func extendSlice(s reflect.Value) {
@@ -78,7 +125,7 @@ func extendSlice(s reflect.Value) {
 // Load a package config, also storing the default config and schema for ibeam-init to pick up
 func Load(structure interface{}) error {
 	if coreName == "" {
-		return fmt.Errorf("No core name set")
+		log.Panic("no corename set")
 	}
 	// then it checks if the config exists, if not store default config
 	// Then load config
@@ -106,11 +153,9 @@ func Load(structure interface{}) error {
 	}
 
 	// This function generates and stores a schema (= default config plus at least one of each type)
-	if !devMode {
-		err = storeSchema(baseFileName+".schema.toml", structure)
-		if err != nil {
-			return fmt.Errorf("on storing schema: %w", err)
-		}
+	err = storeSchema(baseFileName+".schema.toml", structure)
+	if err != nil {
+		return fmt.Errorf("on storing schema: %w", err)
 	}
 
 	_, err = toml.Decode(string(data), structure)
@@ -123,7 +168,7 @@ func Load(structure interface{}) error {
 // save saves struct to toml
 func save(structure interface{}) error {
 	if coreName == "" {
-		return fmt.Errorf("No core name set")
+		log.Panic("no corename set")
 	}
 	var buf bytes.Buffer
 	enc := toml.NewEncoder(&buf)
@@ -156,4 +201,32 @@ func SetDevMode(devmode bool) {
 // SetCoreName sets the name of the core and therefore the files
 func SetCoreName(corename string) {
 	coreName = corename
+}
+
+func validate(tags []string) {
+	// check that each description has a normal tag
+	// check that each select has options
+
+	for _, tag := range tags {
+		if strings.HasSuffix(tag, "_description") {
+			if !contains(tags, strings.TrimSuffix(tag, "_description")) {
+				log.Fatal("Did not find field for description ", tag)
+			}
+		}
+
+		if strings.HasSuffix(tag, "_select") {
+			if !contains(tags, strings.TrimSuffix(tag, "_select")+"_options") {
+				log.Fatal("Did not find options for select ", tag)
+			}
+		}
+	}
+}
+
+func contains(all []string, value string) bool {
+	for _, one := range all {
+		if one == value {
+			return true
+		}
+	}
+	return false
 }

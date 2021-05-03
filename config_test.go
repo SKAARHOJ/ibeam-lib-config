@@ -44,7 +44,7 @@ func ExampleLoad() {
 			{Port: 20},
 		},
 	}
-
+	conf.SetDevMode(true) // only use this in development
 	conf.SetCoreName("core-template")
 	err := conf.Load(&config)
 	if err != nil {
