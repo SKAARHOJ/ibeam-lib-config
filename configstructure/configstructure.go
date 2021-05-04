@@ -36,7 +36,7 @@ type ValueTypeDescriptor struct {
 
 // Value structure
 type Value struct {
-	Type           ValueType
+	Type           ValueTypeDescriptor
 	StringValue    string          `json:",omitempty"`
 	PasswordValue  string          `json:",omitempty"`
 	IntValue       int64           `json:",omitempty"`
@@ -48,9 +48,6 @@ type Value struct {
 	Array          *Array          `json:",omitempty"`
 	Structure      *Structure      `json:",omitempty"`
 	StructureArray *StructureArray `json:",omitempty"`
-
-	Description string   `json:",omitempty"`
-	Options     []string `json:",omitempty"`
 }
 
 type StringValue struct {
@@ -67,8 +64,11 @@ type Array struct {
 // StructureArray has a types map for values and a value field
 type StructureArray struct {
 	Types  map[string]*ValueTypeDescriptor
-	Values []Structure
+	Values []map[string]*Value
 }
 
 // Structure a structure is a named map of values
-type Structure map[string]*Value
+type Structure struct {
+	Types map[string]*ValueTypeDescriptor
+	Value map[string]*Value
+}

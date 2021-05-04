@@ -37,82 +37,8 @@ func storeSchema(file string, structure interface{}) error {
 	return nil
 }
 
-func generateSchema(v reflect.Type) *cs.Structure { // If fail: fatal
-	configSchema := make(cs.Structure)
-
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem() // Then dereference it
-	}
-
-	for i := 0; i < v.NumField(); i++ { // Iterate through all fields of the struct
-		fieldSchema := structFieldValue(v.Field(i))
-
-		configSchema[v.Field(i).Name] = fieldSchema
-	}
-	return &configSchema
-}
-
-func structFieldValue(v reflect.StructField) *cs.Value {
-	fieldSchema := new(cs.Value)
-
-	descriptionTag := v.Tag.Get("ibDescription")
-	optionsTag := v.Tag.Get("ibOptions")
-	validateTag := v.Tag.Get("ibValidate")
-
-	// Check legacy tags
-	tomlTag := v.Tag.Get("toml")
-	if tomlTag == "" {
-		tomlTag = v.Name
-	}
-	// Not sure if we should do this though... as old cores can stay old.... or we breake it fast ?
-	if strings.HasSuffix(tomlTag, "_port") || strings.HasSuffix(tomlTag, "_description") || strings.HasSuffix(tomlTag, "_ip") || strings.HasSuffix(tomlTag, "_select") || strings.HasSuffix(tomlTag, "_unique_inc") {
-		log.Warnf("Config: %s: toml tags for indications are deprecated, please use the new ib tags", tomlTag)
-	}
-
-	switch v.Type.Kind() {
-	case reflect.Slice:
-		// array
-		st := v.Type
-		sliceType := st.Elem() // Get the type of a single slice element
-
-		if sliceType.Kind() == reflect.Ptr { // Pointer?
-			sliceType = sliceType.Elem() // Then dereference it
-		}
-
-		if sliceType.Kind() == reflect.Struct {
-			fieldSchema.Type = cs.ValueType_StructureArray
-			fieldSchema.StructureArray = new(cs.StructureArray)
-			fieldSchema.StructureArray.Types = make(map[string]*cs.ValueTypeDescriptor)
-
-			for i := 0; i < sliceType.NumField(); i++ { // Iterate through all fields of the struct
-				tag := sliceType.Field(i).Tag
-				fieldSchema.StructureArray.Types[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"))
-			}
-
-		} else {
-			fieldSchema.Type = cs.ValueType_Array
-			fieldSchema.Array = new(cs.Array)
-
-			fieldSchema.Array.Type = getTypeDescriptor(sliceType, v.Name, validateTag, descriptionTag, optionsTag)
-		}
-	case reflect.Struct:
-		fieldSchema.Type = cs.ValueType_Structure
-		fieldSchema.Description = descriptionTag
-		fieldSchema.Structure = generateSchema(v.Type)
-	case reflect.Map:
-		log.Panic("skaarOS config does not support maps!")
-		// Current Rules for config:
-		// No pointers
-		// no maps
-	default:
-		fieldSchema.Description = descriptionTag
-
-		if optionsTag != "" { // could check for string here
-			fieldSchema.Options = strings.Split(optionsTag, ",")
-		}
-		fieldSchema.Type = getType(v.Type.Name(), v.Name, validateTag, optionsTag)
-	}
-	return fieldSchema
+func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
+	return getTypeDescriptor(v, "", "", "", "")
 }
 
 func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptionTag, optionsTag string) *cs.ValueTypeDescriptor {
@@ -144,12 +70,8 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 		}
 		return vtd
 	} else if typeName.Kind() == reflect.Struct {
-		vtd.Type = cs.ValueType_Structure
-		vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
-		for i := 0; i < typeName.NumField(); i++ { // Iterate through all fields of the struct
-			tag := typeName.Field(i).Tag
-			vtd.StructureSubtypes[typeName.Field(i).Name] = getTypeDescriptor(typeName.Field(i).Type, typeName.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"))
-		}
+		vtd = structTypeDescriptor(typeName)
+		vtd.Description = descriptionTag
 		return vtd
 	}
 
@@ -157,6 +79,19 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 		vtd.Options = strings.Split(optionsTag, ",")
 	}
 	vtd.Type = getType(typeName.Name(), fieldName, validateTag, optionsTag)
+	return vtd
+}
+
+func structTypeDescriptor(field reflect.Type) *cs.ValueTypeDescriptor {
+	vtd := new(cs.ValueTypeDescriptor)
+	vtd.Type = cs.ValueType_Structure
+	vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
+	for i := 0; i < field.NumField(); i++ { // Iterate through all fields of the struct
+		subField := field.Field(i)
+		tag := subField.Tag
+		vtd.StructureSubtypes[subField.Name] = getTypeDescriptor(subField.Type, subField.Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"))
+	}
+
 	return vtd
 }
 
