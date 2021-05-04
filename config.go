@@ -155,15 +155,19 @@ func Load(structure interface{}) error {
 		// There is a chance that file we are looking for
 		// just doesn't exist. In this case we are supposed
 		// to create an empty configuration file, based on v.
-		if saveErr := save(structure); saveErr != nil {
+		if saveErr := Save(structure); saveErr != nil {
 			return saveErr
 		}
 	}
 
-	// This function generates and stores a schema (= default config plus at least one of each type)
 	err = storeSchema(baseFileName+".schema.json", structure)
 	if err != nil {
 		return fmt.Errorf("on storing schema: %w", err)
+	}
+
+	err = save(structure, coreName+".default")
+	if err != nil {
+		return fmt.Errorf("on storing : %w", err)
 	}
 
 	_, err = toml.Decode(string(data), structure)
@@ -173,11 +177,16 @@ func Load(structure interface{}) error {
 	return nil
 }
 
-// save saves struct to toml
-func save(structure interface{}) error {
+// Save saves struct to toml
+func Save(structure interface{}) error {
 	if coreName == "" {
 		log.Panic("no corename set")
 	}
+	return save(structure, coreName)
+}
+
+// save saves struct to toml
+func save(structure interface{}, filename string) error {
 	var buf bytes.Buffer
 	enc := toml.NewEncoder(&buf)
 	err := enc.Encode(structure)
@@ -185,9 +194,9 @@ func save(structure interface{}) error {
 		return fmt.Errorf("on encoding toml: %w", err)
 	}
 
-	baseFileName := filepath.Join(path, coreName, coreName)
+	baseFileName := filepath.Join(path, coreName, filename)
 	if devMode {
-		baseFileName = filepath.Join(path, coreName)
+		baseFileName = filepath.Join(path, filename)
 	}
 
 	err = ioutil.WriteFile(baseFileName+".toml", buf.Bytes(), os.ModePerm)
