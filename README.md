@@ -25,3 +25,12 @@ Also there are some helpful conventions to improve the webuis understanding of y
 Create a default instance of your config structure. It it needs to be used on multiple go routines use [atomic.Value](https://golang.org/pkg/sync/atomic/) or a **sync.Mutex** to properly protect it (Always check your core with the race detector `go run --race .`)
 
 **Load** When the default config has been filled with default values pass a pointer to the structure to load. The library will automatically load the correct file, and also create it when necessary
+
+
+TODO:
+
+New process
+
+save schema as json here, save toml as toml
+
+save default as extra toml

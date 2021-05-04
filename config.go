@@ -2,14 +2,16 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
-	"unicode"
+
+	cs "github.com/SKAARHOJ/ibeam-lib-config/configstructure"
+	"github.com/pkg/errors"
 
 	log "github.com/s00500/env_logger"
 
@@ -24,102 +26,173 @@ func storeSchema(file string, structure interface{}) error {
 	vptr := reflect.ValueOf(structure)
 	v := vptr.Elem()
 
-	extendStruct(v)
+	csSchema := generateSchema(v.Type())
 
-	if !devMode {
-		var schemaBuffer bytes.Buffer
-		e := toml.NewEncoder(&schemaBuffer)
-		err := e.Encode(structure)
-		if err != nil {
-			return err
-		}
-		return ioutil.WriteFile(file, schemaBuffer.Bytes(), 0644)
+	if !devMode || true { // FIXME:
+		jsonBytes, err := json.Marshal(&csSchema)
+		log.MustFatal(errors.Wrap(err, "on encoding schema"))
+		return ioutil.WriteFile(file, jsonBytes, 0644)
 	}
 
 	return nil
 }
 
-func extendStruct(v reflect.Value) {
+func generateSchema(v reflect.Type) *cs.Structure { // If fail: fatal
+	configSchema := make(cs.Structure)
 
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem() // Then dereference it
 	}
 
-	tomlTagList := make([]string, 0)
+	for i := 0; i < v.NumField(); i++ { // Iterate through all fields of the struct
+		fieldSchema := structFieldValue(v.Field(i))
 
-	for i := 0; i < v.NumField(); i++ {
-		tomlTag := v.Type().Field(i).Tag.Get("toml")
-
-		if tomlTag == "" {
-			tomlTag = v.Type().Field(i).Name
-		}
-
-		tomlTagList = append(tomlTagList, tomlTag)
-
-		if strings.HasSuffix(tomlTag, "_description") {
-			if v.Type().Field(i).Type.Name() != "string" {
-				log.Fatalf("descriptions must be strings! (failed on %s)", tomlTag)
-			}
-		}
-
-		if strings.HasSuffix(tomlTag, "_options") {
-			if v.Type().Field(i).Type.Name() != "[]string" {
-				log.Fatalf("options must be string slices (failed on %s)", tomlTag)
-			}
-		}
-
-		if strings.HasSuffix(tomlTag, "_select") {
-			if v.Type().Field(i).Type.Name() != "string" {
-				log.Fatalf("selects must be strings! (failed on %s)", tomlTag)
-			}
-		}
-
-		name := []rune(v.Type().Field(i).Name)
-		isExported := unicode.IsUpper(name[0])
-
-		switch v.Field(i).Kind() {
-		case reflect.Slice:
-			if !isExported {
-				log.Fatal("Make sure included slices are exported in the main struct (start with uppercase)")
-			}
-			extendSlice(v.Field(i))
-		case reflect.Struct:
-			extendStruct(v.Field(i))
-		case reflect.Map:
-			log.Panic("skaarOS config does not support maps!")
-			// Current Rules for config:
-			// No pointers
-			// no maps
-		}
+		configSchema[v.Field(i).Name] = fieldSchema
 	}
-
-	validate(tomlTagList)
-
+	return &configSchema
 }
 
-func extendSlice(s reflect.Value) {
-	// Problem: certain custom slice types like net.IP caue this to fail.... so we need to skip them
-	if s.Type() == reflect.TypeOf(net.IP{}) {
-		return
+func structFieldValue(v reflect.StructField) *cs.Value {
+	fieldSchema := new(cs.Value)
+
+	descriptionTag := v.Tag.Get("ibDescription")
+	optionsTag := v.Tag.Get("ibOptions")
+	validateTag := v.Tag.Get("ibValidate")
+
+	// Check legacy tags
+	tomlTag := v.Tag.Get("toml")
+	if tomlTag == "" {
+		tomlTag = v.Name
+	}
+	// Not sure if we should do this though... as old cores can stay old.... or we breake it fast ?
+	if strings.HasSuffix(tomlTag, "_port") || strings.HasSuffix(tomlTag, "_description") || strings.HasSuffix(tomlTag, "_ip") || strings.HasSuffix(tomlTag, "_select") || strings.HasSuffix(tomlTag, "_unique_inc") {
+		log.Warnf("Config: %s: toml tags for indications are deprecated, please use the new ib tags", tomlTag)
 	}
 
-	st := s.Type()
-	sliceType := st.Elem() // Get the type of a single slice element
+	switch v.Type.Kind() {
+	case reflect.Slice:
+		// array
+		st := v.Type
+		sliceType := st.Elem() // Get the type of a single slice element
 
-	if sliceType.Kind() == reflect.Ptr { // Pointer?
-		sliceType = sliceType.Elem() // Then dereference it
-	}
-
-	newitem := reflect.New(sliceType)
-	if sliceType.Kind() == reflect.Struct {
-		extendStruct(newitem)
-	} else if sliceType.Kind() == reflect.Slice {
-		for i := 0; i < s.Len(); i++ {
-			extendSlice(s.Index(i)) // extend inner slice values
+		if sliceType.Kind() == reflect.Ptr { // Pointer?
+			sliceType = sliceType.Elem() // Then dereference it
 		}
-		extendSlice(newitem.Elem())
+
+		if sliceType.Kind() == reflect.Struct {
+			fieldSchema.Type = cs.ValueType_StructureArray
+			fieldSchema.StructureArray = new(cs.StructureArray)
+			fieldSchema.StructureArray.Types = make(map[string]*cs.ValueTypeDescriptor)
+
+			for i := 0; i < sliceType.NumField(); i++ { // Iterate through all fields of the struct
+				tag := sliceType.Field(i).Tag
+				fieldSchema.StructureArray.Types[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"))
+			}
+
+		} else {
+			fieldSchema.Type = cs.ValueType_Array
+			fieldSchema.Array = new(cs.Array)
+
+			fieldSchema.Array.Type = getTypeDescriptor(sliceType, v.Name, validateTag, descriptionTag, optionsTag)
+		}
+	case reflect.Struct:
+		fieldSchema.Type = cs.ValueType_Structure
+		fieldSchema.Description = descriptionTag
+		fieldSchema.Structure = generateSchema(v.Type)
+	case reflect.Map:
+		log.Panic("skaarOS config does not support maps!")
+		// Current Rules for config:
+		// No pointers
+		// no maps
+	default:
+		fieldSchema.Description = descriptionTag
+
+		if optionsTag != "" { // could check for string here
+			fieldSchema.Options = strings.Split(optionsTag, ",")
+		}
+		fieldSchema.Type = getType(v.Type.Name(), v.Name, validateTag, optionsTag)
 	}
-	s.Set(reflect.Append(s, newitem.Elem()))
+	return fieldSchema
+}
+
+func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptionTag, optionsTag string) *cs.ValueTypeDescriptor {
+	vtd := new(cs.ValueTypeDescriptor)
+	vtd.Description = descriptionTag
+
+	if optionsTag != "" {
+		vtd.Options = strings.Split(optionsTag, ",")
+	}
+
+	log.Info("Field: ", fieldName, " Type: ", typeName.Name())
+	if typeName.Kind() == reflect.Slice {
+		sliceType := typeName.Elem() // Get the type of a single slice element
+
+		if sliceType.Kind() == reflect.Ptr { // Pointer?
+			sliceType = sliceType.Elem() // Then dereference it
+		}
+
+		if sliceType.Kind() == reflect.Struct {
+			vtd.Type = cs.ValueType_StructureArray
+			vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
+			for i := 0; i < sliceType.NumField(); i++ { // Iterate through all fields of the struct
+				tag := sliceType.Field(i).Tag
+				vtd.StructureSubtypes[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"))
+			}
+		} else {
+			vtd.Type = cs.ValueType_Array
+			vtd.ArraySubType = getTypeDescriptor(sliceType, fieldName, validateTag, descriptionTag, optionsTag)
+		}
+		return vtd
+	} else if typeName.Kind() == reflect.Struct {
+		vtd.Type = cs.ValueType_Structure
+		vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
+		for i := 0; i < typeName.NumField(); i++ { // Iterate through all fields of the struct
+			tag := typeName.Field(i).Tag
+			vtd.StructureSubtypes[typeName.Field(i).Name] = getTypeDescriptor(typeName.Field(i).Type, typeName.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"))
+		}
+		return vtd
+	}
+
+	if optionsTag != "" { // could check for string here
+		vtd.Options = strings.Split(optionsTag, ",")
+	}
+	vtd.Type = getType(typeName.Name(), fieldName, validateTag, optionsTag)
+	return vtd
+}
+
+func getType(typeName, fieldName, validateTag, optionsTag string) cs.ValueType {
+	switch typeName {
+	case "string":
+		if optionsTag != "" {
+			return cs.ValueType_Select
+		}
+		switch validateTag {
+		case "":
+			return cs.ValueType_String
+		case "ip":
+			return cs.ValueType_IP
+		case "password":
+			return cs.ValueType_Password
+		default:
+			log.Fatal("Invalid validate '%s' tag on %s", validateTag, fieldName)
+		}
+
+	case "int", "uint32", "uint16", "uint64": // TODO: more int types ?
+		switch validateTag {
+		case "":
+			return cs.ValueType_Integer
+		case "port":
+			return cs.ValueType_Port
+		case "unique_inc":
+			return cs.ValueType_UniqueInc
+		default:
+			log.Fatal("Invalid validate '%s' tag on %s", validateTag, fieldName)
+		}
+	default:
+		log.Fatalf("Unknown type '%s' for config field  %s", typeName, fieldName)
+	}
+	log.Error("return 0")
+	return 0
 }
 
 // Load a package config, also storing the default config and schema for ibeam-init to pick up
@@ -153,7 +226,7 @@ func Load(structure interface{}) error {
 	}
 
 	// This function generates and stores a schema (= default config plus at least one of each type)
-	err = storeSchema(baseFileName+".schema.toml", structure)
+	err = storeSchema(baseFileName+".schema.json", structure)
 	if err != nil {
 		return fmt.Errorf("on storing schema: %w", err)
 	}
@@ -203,25 +276,7 @@ func SetCoreName(corename string) {
 	coreName = corename
 }
 
-func validate(tags []string) {
-	// check that each description has a normal tag
-	// check that each select has options
-
-	for _, tag := range tags {
-		if strings.HasSuffix(tag, "_description") {
-			if !contains(tags, strings.TrimSuffix(tag, "_description")) {
-				log.Fatal("Did not find field for description ", tag)
-			}
-		}
-
-		if strings.HasSuffix(tag, "_select") {
-			if !contains(tags, strings.TrimSuffix(tag, "_select")+"_options") {
-				log.Fatal("Did not find options for select ", tag)
-			}
-		}
-	}
-}
-
+/*
 func contains(all []string, value string) bool {
 	for _, one := range all {
 		if one == value {
@@ -230,3 +285,4 @@ func contains(all []string, value string) bool {
 	}
 	return false
 }
+*/
