@@ -20,10 +20,15 @@ const (
 	ValueType_Array
 	ValueType_StructureArray
 	ValueType_Password
-	ValueType_Description
 	ValueType_Select
 	ValueType_UniqueInc
 )
+
+/*
+Schema: Tree of ValueTypeDescriptors
+
+Config Tree of Value
+*/
 
 type ValueTypeDescriptor struct {
 	Type        ValueType
@@ -50,25 +55,17 @@ type Value struct {
 	StructureArray *StructureArray `json:",omitempty"`
 }
 
-type StringValue struct {
-	Type   ValueTypeDescriptor
-	Values []Value
-}
-
 // Array has a type of values and a value field
 type Array struct {
-	Type   *ValueTypeDescriptor
 	Values []Value
 }
 
 // StructureArray has a types map for values and a value field
 type StructureArray struct {
-	Types  map[string]*ValueTypeDescriptor
 	Values []map[string]*Value
 }
 
 // Structure a structure is a named map of values
 type Structure struct {
-	Types map[string]*ValueTypeDescriptor
 	Value map[string]*Value
 }
