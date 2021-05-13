@@ -28,7 +28,7 @@ func storeSchema(file string, structure interface{}) error {
 
 	csSchema := generateSchema(v.Type())
 
-	if !devMode || true { // FIXME:
+	if !devMode {
 		jsonBytes, err := json.Marshal(&csSchema)
 		log.MustFatal(errors.Wrap(err, "on encoding schema"))
 		return ioutil.WriteFile(file, jsonBytes, 0644)
@@ -49,7 +49,6 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 		vtd.Options = strings.Split(optionsTag, ",")
 	}
 
-	log.Info("Field: ", fieldName, " Type: ", typeName.Name())
 	if typeName.Kind() == reflect.Slice {
 		sliceType := typeName.Elem() // Get the type of a single slice element
 
