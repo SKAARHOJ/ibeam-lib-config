@@ -122,6 +122,8 @@ func getType(typeName, fieldName, validateTag, optionsTag string) cs.ValueType {
 		default:
 			log.Fatal("Invalid validate '%s' tag on %s", validateTag, fieldName)
 		}
+	case "bool":
+		return cs.ValueType_Checkbox
 	default:
 		log.Fatalf("Unknown type '%s' for config field  %s", typeName, fieldName)
 	}
