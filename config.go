@@ -19,7 +19,10 @@ import (
 )
 
 var devMode bool = false
-var path string = "/var/ibeam/config"
+
+const skaarOSpath string = "/var/ibeam/config"
+
+var path string = skaarOSpath
 var coreName string = ""
 
 func storeSchema(file string, structure interface{}) error {
@@ -111,7 +114,7 @@ func getType(typeName, fieldName, validateTag, optionsTag string) cs.ValueType {
 			log.Fatal("Invalid validate '%s' tag on %s", validateTag, fieldName)
 		}
 
-	case "int", "uint32", "uint16", "uint64": // TODO: more int types ?
+	case "int", "int32", "int64", "uint32", "uint16", "uint64":
 		switch validateTag {
 		case "":
 			return cs.ValueType_Integer
@@ -213,6 +216,8 @@ func SetDevMode(devmode bool) {
 	devMode = devmode
 	if devMode {
 		path = ""
+	} else {
+		path = skaarOSpath
 	}
 }
 
@@ -220,14 +225,3 @@ func SetDevMode(devmode bool) {
 func SetCoreName(corename string) {
 	coreName = corename
 }
-
-/*
-func contains(all []string, value string) bool {
-	for _, one := range all {
-		if one == value {
-			return true
-		}
-	}
-	return false
-}
-*/
