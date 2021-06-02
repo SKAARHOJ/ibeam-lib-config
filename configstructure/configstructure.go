@@ -21,9 +21,10 @@ const (
 )
 
 type ValueTypeDescriptor struct {
-	Type        ValueType
-	Description string   `json:",omitempty"`
-	Options     []string `json:",omitempty"`
+	Type            ValueType
+	Description     string   `json:",omitempty"`
+	Options         []string `json:",omitempty"`
+	DispatchOptions []string `json:",omitempty"`
 
 	ArraySubType      *ValueTypeDescriptor            `json:",omitempty"`
 	StructureSubtypes map[string]*ValueTypeDescriptor `json:",omitempty"`

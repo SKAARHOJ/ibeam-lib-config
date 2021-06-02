@@ -41,10 +41,10 @@ func storeSchema(file string, structure interface{}) error {
 }
 
 func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
-	return getTypeDescriptor(v, "", "", "", "")
+	return getTypeDescriptor(v, "", "", "", "", "")
 }
 
-func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptionTag, optionsTag string) *cs.ValueTypeDescriptor {
+func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptionTag, optionsTag, dispatchTag string) *cs.ValueTypeDescriptor {
 	vtd := new(cs.ValueTypeDescriptor)
 	vtd.Description = descriptionTag
 
@@ -60,18 +60,25 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 		}
 
 		if sliceType.Kind() == reflect.Struct {
+			vtd.DispatchOptions = strings.Split(dispatchTag, ",")
 			vtd.Type = cs.ValueType_StructureArray
 			vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
 			for i := 0; i < sliceType.NumField(); i++ { // Iterate through all fields of the struct
 				tag := sliceType.Field(i).Tag
-				vtd.StructureSubtypes[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"))
+				vtd.StructureSubtypes[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
 			}
 		} else {
+			if dispatchTag != "" {
+				log.Fatal("can not use dispatch tag on other fields than structured array")
+			}
 			vtd.Type = cs.ValueType_Array
-			vtd.ArraySubType = getTypeDescriptor(sliceType, fieldName, validateTag, descriptionTag, optionsTag)
+			vtd.ArraySubType = getTypeDescriptor(sliceType, fieldName, validateTag, descriptionTag, optionsTag, dispatchTag)
 		}
 		return vtd
 	} else if typeName.Kind() == reflect.Struct {
+		if dispatchTag != "" {
+			log.Fatal("can not use dispatch tag on other fields than structured array")
+		}
 		vtd = structTypeDescriptor(typeName)
 		vtd.Description = descriptionTag
 		return vtd
@@ -80,7 +87,7 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 	if optionsTag != "" { // could check for string here
 		vtd.Options = strings.Split(optionsTag, ",")
 	}
-	vtd.Type = getType(typeName.Name(), fieldName, validateTag, optionsTag)
+	vtd.Type = getType(typeName.Name(), fieldName, validateTag, optionsTag, dispatchTag)
 	return vtd
 }
 
@@ -91,13 +98,16 @@ func structTypeDescriptor(field reflect.Type) *cs.ValueTypeDescriptor {
 	for i := 0; i < field.NumField(); i++ { // Iterate through all fields of the struct
 		subField := field.Field(i)
 		tag := subField.Tag
-		vtd.StructureSubtypes[subField.Name] = getTypeDescriptor(subField.Type, subField.Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"))
+		vtd.StructureSubtypes[subField.Name] = getTypeDescriptor(subField.Type, subField.Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
 	}
 
 	return vtd
 }
 
-func getType(typeName, fieldName, validateTag, optionsTag string) cs.ValueType {
+func getType(typeName, fieldName, validateTag, optionsTag, dispatchTag string) cs.ValueType {
+	if dispatchTag != "" {
+		log.Fatal("can not use dispatch tag on other fields than structured array")
+	}
 	switch typeName {
 	case "string":
 		if optionsTag != "" {
