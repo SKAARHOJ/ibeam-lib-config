@@ -60,6 +60,9 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 		}
 
 		if sliceType.Kind() == reflect.Struct {
+			if dispatchTag != "" && dispatchTag != "devices" {
+				log.Fatal("can not use dispatch tag other than devices currently")
+			}
 			vtd.DispatchOptions = strings.Split(dispatchTag, ",")
 			vtd.Type = cs.ValueType_StructureArray
 			vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
