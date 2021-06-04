@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	cs "github.com/SKAARHOJ/ibeam-lib-config/configstructure"
-	"github.com/pkg/errors"
 
 	log "github.com/s00500/env_logger"
 
@@ -33,7 +32,7 @@ func storeSchema(file string, structure interface{}) error {
 
 	if !devMode {
 		jsonBytes, err := json.Marshal(&csSchema)
-		log.MustFatal(errors.Wrap(err, "on encoding schema"))
+		log.MustFatal(log.Wrap(err, "on encoding schema"))
 		return ioutil.WriteFile(file, jsonBytes, 0644)
 	}
 
