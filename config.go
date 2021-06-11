@@ -66,9 +66,9 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 		}
 
 		if sliceType.Kind() == reflect.Struct {
-			if dispatchTag != "" && dispatchTag != "devices" {
-				log.Fatal("can not use dispatch tag other than devices currently")
-			}
+			//if dispatchTag != "" && dispatchTag != "devices" {
+			//	log.Fatal("can not use dispatch tag other than devices currently")
+			//}
 			vtd.DispatchOptions = strings.Split(dispatchTag, ",")
 			vtd.Type = cs.ValueType_StructureArray
 			vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
@@ -77,17 +77,17 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 				vtd.StructureSubtypes[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
 			}
 		} else {
-			if dispatchTag != "" {
-				log.Fatal("can not use dispatch tag on other fields than structured array")
-			}
+			//if dispatchTag != "" {
+			//	log.Fatal("can not use dispatch tag on other fields than structured array")
+			//}
 			vtd.Type = cs.ValueType_Array
 			vtd.ArraySubType = getTypeDescriptor(sliceType, fieldName, validateTag, descriptionTag, optionsTag, dispatchTag)
 		}
 		return vtd
 	} else if typeName.Kind() == reflect.Struct {
-		if dispatchTag != "" {
-			log.Fatal("can not use dispatch tag on other fields than structured array")
-		}
+		//if dispatchTag != "" {
+		//	log.Fatal("can not use dispatch tag on other fields than structured array")
+		//}
 		vtd = structTypeDescriptor(typeName)
 		vtd.Description = descriptionTag
 		return vtd
