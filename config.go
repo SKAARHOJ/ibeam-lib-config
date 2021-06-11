@@ -114,9 +114,9 @@ func structTypeDescriptor(field reflect.Type) *cs.ValueTypeDescriptor {
 }
 
 func getType(typeName, fieldName, validateTag, optionsTag, dispatchTag string) cs.ValueType {
-	if dispatchTag != "" {
-		log.Fatal("can not use dispatch tag on other fields than structured array")
-	}
+	//if dispatchTag != "" {
+	//	log.Fatal("can not use dispatch tag on other fields than structured array")
+	//}
 	switch typeName {
 	case "string":
 		if optionsTag != "" {
