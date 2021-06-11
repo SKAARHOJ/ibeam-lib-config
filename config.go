@@ -30,7 +30,14 @@ func storeSchema(file string, structure interface{}) error {
 
 	csSchema := generateSchema(v.Type())
 
-	if !devMode {
+	schemaPath := os.Getenv("IBEAM_CONFIG_SCHEMA")
+	if schemaPath != "" {
+		jsonBytes, err := json.Marshal(&csSchema)
+		log.MustFatal(log.Wrap(err, "on encoding schema"))
+		return ioutil.WriteFile(filepath.Join(schemaPath, coreName+".schema.json"), jsonBytes, 0644)
+	}
+
+	if devMode {
 		jsonBytes, err := json.Marshal(&csSchema)
 		log.MustFatal(log.Wrap(err, "on encoding schema"))
 		return ioutil.WriteFile(file, jsonBytes, 0644)
