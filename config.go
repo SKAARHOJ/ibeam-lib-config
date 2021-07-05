@@ -146,6 +146,8 @@ func getType(typeName, fieldName, validateTag, optionsTag, dispatchTag string) c
 		}
 	case "bool":
 		return cs.ValueType_Checkbox
+	case "float32", "float64":
+		return cs.ValueType_Float
 	default:
 		log.Fatalf("Unknown type '%s' for config field  %s", typeName, fieldName)
 	}
