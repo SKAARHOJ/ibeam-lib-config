@@ -69,11 +69,26 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 			//if dispatchTag != "" && dispatchTag != "devices" {
 			//	log.Fatal("can not use dispatch tag other than devices currently")
 			//}
+			if dispatchTag == "devices" || strings.ToLower(fieldName) == "devices" {
+				log.Info("Got type ", typeName)
+				var dcIface ibeamDeviceConfig
+				if !sliceType.Implements(reflect.TypeOf(&dcIface).Elem()) {
+					log.Fatal("Your deviceconfig array does not embedd config.BaseDeviceConfig, please add it and check for potential field duplications")
+				}
+			}
+
 			vtd.DispatchOptions = strings.Split(dispatchTag, ",")
 			vtd.Type = cs.ValueType_StructureArray
 			vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
 			for i := 0; i < sliceType.NumField(); i++ { // Iterate through all fields of the struct
 				tag := sliceType.Field(i).Tag
+				if sliceType.Field(i).Type.Kind() == reflect.Struct && sliceType.Field(i).Anonymous {
+					anoStructDescriptor := getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
+					for name, typeDesc := range anoStructDescriptor.StructureSubtypes {
+						vtd.StructureSubtypes[name] = typeDesc
+					}
+					continue
+				}
 				vtd.StructureSubtypes[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
 			}
 		} else {
@@ -106,6 +121,7 @@ func structTypeDescriptor(field reflect.Type) *cs.ValueTypeDescriptor {
 	vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
 	for i := 0; i < field.NumField(); i++ { // Iterate through all fields of the struct
 		subField := field.Field(i)
+
 		tag := subField.Tag
 		vtd.StructureSubtypes[subField.Name] = getTypeDescriptor(subField.Type, subField.Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
 	}
