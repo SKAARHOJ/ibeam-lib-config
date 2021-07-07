@@ -14,7 +14,7 @@ type BaseDeviceConfig struct {
 	ModelID     uint32 `ibDescription:"the model type of the device"`
 	Active      bool   `ibDispatch:"active" ibDescription:"disable connecting to the device"`
 	Name        string `ibDispatch:"name" ibDescription:"choose a name of your device"`
-	Description string
+	Description string `ibDispatch:"description"`
 }
 
 func (b BaseDeviceConfig) mustEmbedBaseDevice() {}
