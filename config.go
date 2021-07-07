@@ -64,7 +64,6 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 			//	log.Fatal("can not use dispatch tag other than devices currently")
 			//}
 			if dispatchTag == "devices" || strings.ToLower(fieldName) == "devices" {
-				log.Info("Got type ", typeName)
 				var dcIface ibeamDeviceConfig
 				if !sliceType.Implements(reflect.TypeOf(&dcIface).Elem()) {
 					log.Fatal("Your deviceconfig array does not embedd config.BaseDeviceConfig, please add it and check for potential field duplications")
@@ -79,9 +78,16 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 				if sliceType.Field(i).Type.Kind() == reflect.Struct && sliceType.Field(i).Anonymous {
 					anoStructDescriptor := getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
 					for name, typeDesc := range anoStructDescriptor.StructureSubtypes {
+						if _, exists := vtd.StructureSubtypes[name]; exists {
+							log.Fatalf("Potential struct Fieldname dupplication of field %s, ensure you have only one field with this name", name)
+						}
 						vtd.StructureSubtypes[name] = typeDesc
 					}
 					continue
+				}
+
+				if _, exists := vtd.StructureSubtypes[sliceType.Field(i).Name]; exists {
+					log.Fatalf("Potential struct Fieldname dupplication of field %s, ensure you have only one field with this name", sliceType.Field(i).Name)
 				}
 				vtd.StructureSubtypes[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
 			}

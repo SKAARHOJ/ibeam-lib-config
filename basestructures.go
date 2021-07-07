@@ -4,9 +4,10 @@ type ibeamDeviceConfig interface {
 	mustEmbedBaseDevice()
 }
 
-//type BaseCoreConfig struct {
+// At some later point we might also use this structure as a template... but for atemproxy and others this migh not make sense
+// type BaseCoreConfig struct {
 //	Devices []ibeamDeviceConfig
-//}
+// }
 
 type BaseDeviceConfig struct {
 	DeviceID    uint32 `ibDispatch:"deviceid" ibValidate:"unique_inc" ibDescription:"unique number identifier for this device"`
