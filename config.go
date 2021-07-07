@@ -37,12 +37,6 @@ func storeSchema(file string, structure interface{}) error {
 		return ioutil.WriteFile(filepath.Join(schemaPath, coreName+".schema.json"), jsonBytes, 0644)
 	}
 
-	if devMode {
-		jsonBytes, err := json.Marshal(&csSchema)
-		log.MustFatal(log.Wrap(err, "on encoding schema"))
-		return ioutil.WriteFile(file, jsonBytes, 0644)
-	}
-
 	return nil
 }
 
