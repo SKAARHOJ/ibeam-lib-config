@@ -146,7 +146,7 @@ func getType(typeName, fieldName, validateTag, optionsTag, dispatchTag string) c
 		case "password":
 			return cs.ValueType_Password
 		default:
-			log.Fatal("Invalid validate '%s' tag on %s", validateTag, fieldName)
+			log.Fatalf("Invalid validate '%s' tag on %s", validateTag, fieldName)
 		}
 
 	case "int", "int32", "int64", "uint32", "uint16", "uint64":
