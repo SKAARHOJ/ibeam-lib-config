@@ -31,10 +31,17 @@ func storeSchema(file string, structure interface{}) error {
 	csSchema := generateSchema(v.Type())
 
 	schemaPath := os.Getenv("IBEAM_CONFIG_SCHEMA")
+
 	if schemaPath != "" {
 		jsonBytes, err := json.Marshal(&csSchema)
 		log.MustFatal(log.Wrap(err, "on encoding schema"))
 		return ioutil.WriteFile(filepath.Join(schemaPath, coreName+".schema.json"), jsonBytes, 0644)
+	}
+
+	if !devMode {
+		jsonBytes, err := json.Marshal(&csSchema)
+		log.MustFatal(log.Wrap(err, "on encoding schema"))
+		return ioutil.WriteFile(file, jsonBytes, 0644)
 	}
 
 	return nil
@@ -158,7 +165,7 @@ func getType(typeName, fieldName, validateTag, optionsTag, dispatchTag string) c
 		case "unique_inc":
 			return cs.ValueType_UniqueInc
 		default:
-			log.Fatal("Invalid validate '%s' tag on %s", validateTag, fieldName)
+			log.Fatalf("Invalid validate '%s' tag on %s", validateTag, fieldName)
 		}
 	case "bool":
 		return cs.ValueType_Checkbox
@@ -182,7 +189,8 @@ func Load(structure interface{}) error {
 	// check for the config dir, create if it does not exist
 	if !devMode {
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			os.Mkdir(filepath.Join(path, coreName, coreName), 0700)
+			err := os.Mkdir(filepath.Join(path, coreName, coreName), 0700)
+			log.Should(err)
 		}
 	}
 
