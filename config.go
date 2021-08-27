@@ -219,7 +219,7 @@ func Load(structure interface{}) error {
 		return fmt.Errorf("on storing : %w", err)
 	}
 
-	_, err = toml.Decode(string(data), structure)
+	err = toml.Unmarshal(data, structure)
 	if err != nil {
 		return fmt.Errorf("on decoding toml: %w", err)
 	}
