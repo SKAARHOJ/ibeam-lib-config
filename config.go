@@ -14,7 +14,7 @@ import (
 
 	log "github.com/s00500/env_logger"
 
-	"github.com/BurntSushi/toml"
+	"github.com/pelletier/go-toml"
 )
 
 var devMode bool = false
