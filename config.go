@@ -58,6 +58,9 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 	if optionsTag != "" {
 		vtd.Options = strings.Split(optionsTag, ",")
 	}
+	if dispatchTag != "" {
+		vtd.DispatchOptions = strings.Split(dispatchTag, ",")
+	}
 
 	if typeName.Kind() == reflect.Slice {
 		sliceType := typeName.Elem() // Get the type of a single slice element
@@ -77,12 +80,12 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 				}
 			}
 
-			vtd.DispatchOptions = strings.Split(dispatchTag, ",")
 			vtd.Type = cs.ValueType_StructureArray
 			vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
 			for i := 0; i < sliceType.NumField(); i++ { // Iterate through all fields of the struct
 				tag := sliceType.Field(i).Tag
 				if sliceType.Field(i).Type.Kind() == reflect.Struct && sliceType.Field(i).Anonymous {
+					log.Println(tag.Get("ibDispatch"))
 					anoStructDescriptor := getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
 					for name, typeDesc := range anoStructDescriptor.StructureSubtypes {
 						if _, exists := vtd.StructureSubtypes[name]; exists {
