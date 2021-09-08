@@ -3,6 +3,7 @@ package config_test
 import (
 	"fmt"
 	"net"
+	"testing"
 
 	conf "github.com/SKAARHOJ/ibeam-lib-config"
 )
@@ -38,6 +39,35 @@ func ExampleLoad() {
 				{"Hi people"},
 			},
 		},
+		Devices: []DeviceConfig{
+			{Port: 20},
+			{Port: 20},
+			{Port: 20},
+		},
+	}
+	conf.SetDevMode(true) // only use this in development
+	conf.SetCoreName("core-template")
+	err := conf.Load(&config)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func TestSave(t *testing.T) {
+	type DeviceConfig struct {
+		conf.BaseDeviceConfig
+		IPAddress      string
+		Port           uint16
+		SomeConfigName string
+		Stringoray     []string
+	}
+
+	type Config struct {
+		Devices []DeviceConfig
+	}
+
+	// Define config filled with all defaults
+	var config = Config{
 		Devices: []DeviceConfig{
 			{Port: 20},
 			{Port: 20},

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 
 	cs "github.com/SKAARHOJ/ibeam-lib-config/configstructure"
@@ -48,12 +49,17 @@ func storeSchema(file string, structure interface{}) error {
 }
 
 func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
-	return getTypeDescriptor(v, "", "", "", "", "")
+	return getTypeDescriptor(v, "", "", "", "", "", "")
 }
 
-func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptionTag, optionsTag, dispatchTag string) *cs.ValueTypeDescriptor {
+func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptionTag, optionsTag, dispatchTag, orderTag string) *cs.ValueTypeDescriptor {
 	vtd := new(cs.ValueTypeDescriptor)
 	vtd.Description = descriptionTag
+	if orderTag != "" {
+		orderNum, err := strconv.ParseInt(orderTag, 10, 32)
+		log.ShouldWarn(log.Wrap(err, "on parsing order number for field %s", fieldName))
+		vtd.Order = int(orderNum)
+	}
 
 	if optionsTag != "" {
 		vtd.Options = strings.Split(optionsTag, ",")
@@ -86,7 +92,7 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 				tag := sliceType.Field(i).Tag
 				if sliceType.Field(i).Type.Kind() == reflect.Struct && sliceType.Field(i).Anonymous {
 					log.Println(tag.Get("ibDispatch"))
-					anoStructDescriptor := getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
+					anoStructDescriptor := getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"), tag.Get("ibOrder"))
 					for name, typeDesc := range anoStructDescriptor.StructureSubtypes {
 						if _, exists := vtd.StructureSubtypes[name]; exists {
 							log.Fatalf("Potential struct Fieldname dupplication of field %s, ensure you have only one field with this name", name)
@@ -99,14 +105,14 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 				if _, exists := vtd.StructureSubtypes[sliceType.Field(i).Name]; exists {
 					log.Fatalf("Potential struct Fieldname dupplication of field %s, ensure you have only one field with this name", sliceType.Field(i).Name)
 				}
-				vtd.StructureSubtypes[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
+				vtd.StructureSubtypes[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"), tag.Get("ibOrder"))
 			}
 		} else {
 			//if dispatchTag != "" {
 			//	log.Fatal("can not use dispatch tag on other fields than structured array")
 			//}
 			vtd.Type = cs.ValueType_Array
-			vtd.ArraySubType = getTypeDescriptor(sliceType, fieldName, validateTag, descriptionTag, optionsTag, dispatchTag)
+			vtd.ArraySubType = getTypeDescriptor(sliceType, fieldName, validateTag, descriptionTag, optionsTag, dispatchTag, orderTag)
 		}
 		return vtd
 	} else if typeName.Kind() == reflect.Struct {
@@ -133,7 +139,7 @@ func structTypeDescriptor(field reflect.Type) *cs.ValueTypeDescriptor {
 		subField := field.Field(i)
 
 		tag := subField.Tag
-		vtd.StructureSubtypes[subField.Name] = getTypeDescriptor(subField.Type, subField.Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"))
+		vtd.StructureSubtypes[subField.Name] = getTypeDescriptor(subField.Type, subField.Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"), tag.Get("ibOrder"))
 	}
 
 	return vtd

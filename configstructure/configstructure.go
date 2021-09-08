@@ -24,6 +24,7 @@ type ValueTypeDescriptor struct {
 	Type            ValueType
 	Description     string   `json:",omitempty"`
 	Options         []string `json:",omitempty"`
+	Order           int      `json:",omitempty"`
 	DispatchOptions []string `json:",omitempty"`
 
 	ArraySubType      *ValueTypeDescriptor            `json:",omitempty"`
