@@ -55,17 +55,23 @@ func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
 func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptionTag, optionsTag, dispatchTag, orderTag string) *cs.ValueTypeDescriptor {
 	vtd := new(cs.ValueTypeDescriptor)
 	vtd.Description = descriptionTag
+
+	if dispatchTag != "" {
+		vtd.DispatchOptions = strings.Split(dispatchTag, ",")
+	}
+
 	if orderTag != "" {
 		orderNum, err := strconv.ParseInt(orderTag, 10, 32)
 		log.ShouldWarn(log.Wrap(err, "on parsing order number for field %s", fieldName))
 		vtd.Order = int(orderNum)
+	} else {
+		if containsString(vtd.DispatchOptions, "deviceip") {
+			vtd.Order = 7 // Very special case, if IP is marked in core autofill the order parameter if not explicitly set
+		}
 	}
 
 	if optionsTag != "" {
 		vtd.Options = strings.Split(optionsTag, ",")
-	}
-	if dispatchTag != "" {
-		vtd.DispatchOptions = strings.Split(dispatchTag, ",")
 	}
 
 	if typeName.Kind() == reflect.Slice {
@@ -91,7 +97,6 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 			for i := 0; i < sliceType.NumField(); i++ { // Iterate through all fields of the struct
 				tag := sliceType.Field(i).Tag
 				if sliceType.Field(i).Type.Kind() == reflect.Struct && sliceType.Field(i).Anonymous {
-					log.Println(tag.Get("ibDispatch"))
 					anoStructDescriptor := getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"), tag.Get("ibOrder"))
 					for name, typeDesc := range anoStructDescriptor.StructureSubtypes {
 						if _, exists := vtd.StructureSubtypes[name]; exists {
@@ -278,4 +283,13 @@ func SetDevMode(devmode bool) {
 // SetCoreName sets the name of the core and therefore the files
 func SetCoreName(corename string) {
 	coreName = corename
+}
+
+func containsString(all []string, one string) bool {
+	for _, s := range all {
+		if s == one {
+			return true
+		}
+	}
+	return false
 }

@@ -10,11 +10,11 @@ type ibeamDeviceConfig interface {
 // }
 
 type BaseDeviceConfig struct {
-	Active      bool   `ibOrder:"1" ibDispatch:"active" ibDescription:"disable connecting to the device"`
-	DeviceID    uint32 `ibOrder:"2" ibDispatch:"deviceid" ibValidate:"unique_inc" ibDescription:"unique number identifier for this device"`
-	ModelID     uint32 `ibOrder:"3" ibDispatch:"modelid" ibDescription:"the model type of the device"`
-	Name        string `ibOrder:"4" ibDispatch:"name" ibDescription:"choose a name of your device"`
-	Description string `ibOrder:"5" ibDispatch:"description"`
+	Active      bool   `ibOrder:"1" ibDispatch:"active"`
+	Name        string `ibOrder:"5" ibDispatch:"name" ibDescription:""`
+	DeviceID    uint32 `ibOrder:"10" ibDispatch:"deviceid" ibValidate:"unique_inc" ibDescription:"Unique number identifier for this device"`
+	ModelID     uint32 `ibOrder:"15" ibDispatch:"modelid" ibDescription:"The model type of the device"`
+	Description string `ibOrder:"20" ibDispatch:"description"`
 }
 
 func (b BaseDeviceConfig) mustEmbedBaseDevice() {}
