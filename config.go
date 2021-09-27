@@ -233,6 +233,9 @@ func Load(structure interface{}) error {
 		return fmt.Errorf("on storing : %w", err)
 	}
 
+	p := reflect.ValueOf(structure).Elem()
+	p.Set(reflect.Zero(p.Type()))
+
 	err = toml.Unmarshal(data, structure)
 	if err != nil {
 		return fmt.Errorf("on decoding toml: %w", err)
