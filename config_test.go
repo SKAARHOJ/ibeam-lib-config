@@ -62,8 +62,14 @@ func TestSave(t *testing.T) {
 		Stringoray     []string
 	}
 
+	type OtherStruct struct {
+		Name    string
+		Address int
+	}
+
 	type Config struct {
-		Devices []DeviceConfig
+		Devices    []DeviceConfig
+		OtherStuff []OtherStruct
 	}
 
 	// Define config filled with all defaults
@@ -79,5 +85,42 @@ func TestSave(t *testing.T) {
 	err := conf.Load(&config)
 	if err != nil {
 		fmt.Println(err)
+	}
+	fmt.Println(config)
+}
+
+func TestLoad(t *testing.T) {
+	// Needs to run after test save
+	type DeviceConfig struct {
+		conf.BaseDeviceConfig
+		IPAddress      string
+		Port           uint16
+		SomeConfigName string
+		Stringoray     []string
+	}
+
+	type OtherStruct struct {
+		Name    string
+		Address int
+	}
+
+	type Config struct {
+		Devices    []DeviceConfig
+		OtherStuff []OtherStruct
+	}
+
+	// Define config filled with all defaults
+	var config = Config{
+		Devices: []DeviceConfig{
+			{Port: 20},
+			{Port: 20},
+			{Port: 20},
+		},
+	}
+	conf.SetDevMode(true) // only use this in development
+	conf.SetCoreName("core-template")
+	err := conf.Load(&config)
+	if err != nil {
+		t.Error(err)
 	}
 }
