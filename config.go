@@ -218,8 +218,15 @@ func Load(structure interface{}) error {
 		// There is a chance that file we are looking for
 		// just doesn't exist. In this case we are supposed
 		// to create an empty configuration file, based on v.
+		log.Info("enter save")
 		if saveErr := Save(structure); saveErr != nil {
+			log.Info("save error ", saveErr)
 			return saveErr
+		}
+		data, err = ioutil.ReadFile(baseFileName + ".toml")
+		if err != nil {
+			return log.Wrap(err, "on reading after saving")
+
 		}
 	}
 
@@ -227,11 +234,13 @@ func Load(structure interface{}) error {
 	if err != nil {
 		return fmt.Errorf("on storing schema: %w", err)
 	}
+	log.Info("stored schema")
 
 	err = save(structure, coreName+".default")
 	if err != nil {
 		return fmt.Errorf("on storing : %w", err)
 	}
+	log.Info("saved default")
 
 	p := reflect.ValueOf(structure).Elem()
 	p.Set(reflect.Zero(p.Type()))
