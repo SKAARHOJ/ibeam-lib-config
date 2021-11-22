@@ -1,5 +1,7 @@
 github.com/BurntSushi/toml v0.4.2-0.20210923080940-e0af6a256822 h1:6ePyo7hd1wTe0oE+zRjOCDUyTiLM9o5r0xylhmj1/0A=
 github.com/BurntSushi/toml v0.4.2-0.20210923080940-e0af6a256822/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
+github.com/SKAARHOJ/ibeam-lib-env v0.0.0-20211122172136-6d06ddff133c h1:oHLDK0opvHS4QGsQx8gKumVy8e6TnCvYtS8ZwSu0KyA=
+github.com/SKAARHOJ/ibeam-lib-env v0.0.0-20211122172136-6d06ddff133c/go.mod h1:30J0bJ4+ezueHMyI5UlXkob5PPuNfxbLXbzle/YWONA=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

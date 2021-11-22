@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	cs "github.com/SKAARHOJ/ibeam-lib-config/configstructure"
+	env "github.com/SKAARHOJ/ibeam-lib-env"
 
 	log "github.com/s00500/env_logger"
 
@@ -24,6 +25,12 @@ const skaarOSpath string = "/var/ibeam/config"
 
 var path string = skaarOSpath
 var coreName string = ""
+
+func init() {
+	if env.IsDev() || env.IsProd() {
+		path = "" // In case we are not on skaarOS do not add the skaarOS path
+	}
+}
 
 func storeSchema(file string, structure interface{}) error {
 	vptr := reflect.ValueOf(structure)
