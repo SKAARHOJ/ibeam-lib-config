@@ -28,6 +28,7 @@ var coreName string = ""
 
 func init() {
 	if env.IsDev() || env.IsProd() {
+		devMode = true
 		path = "" // In case we are not on skaarOS do not add the skaarOS path
 	}
 }
