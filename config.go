@@ -211,7 +211,7 @@ func Load(structure interface{}) error {
 	// check for the config dir, create if it does not exist
 	if !devMode {
 		if _, err := os.Stat(path); os.IsNotExist(err) {
-			err := os.Mkdir(filepath.Join(path, coreName, coreName), 0700)
+			err := os.MkdirAll(filepath.Join(path, coreName), 0700)
 			log.Should(err)
 		}
 	}
