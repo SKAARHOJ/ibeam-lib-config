@@ -33,6 +33,18 @@ func init() {
 	}
 }
 
+// Returns the current schema for a core
+func GetSchema(structure interface{}) []byte {
+	vptr := reflect.ValueOf(structure)
+	v := vptr.Elem()
+
+	csSchema := generateSchema(v.Type())
+
+	jsonBytes, err := json.Marshal(&csSchema)
+	log.Should(log.Wrap(err, "on getting schema"))
+	return jsonBytes
+}
+
 func storeSchema(file string, structure interface{}) error {
 	vptr := reflect.ValueOf(structure)
 	v := vptr.Elem()
@@ -57,10 +69,20 @@ func storeSchema(file string, structure interface{}) error {
 }
 
 func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
-	return getTypeDescriptor(v, "", "", "", "", "", "")
+	return getTypeDescriptor(v, "", nil)
 }
 
-func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptionTag, optionsTag, dispatchTag, orderTag string) *cs.ValueTypeDescriptor {
+func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *reflect.StructTag) *cs.ValueTypeDescriptor {
+	var validateTag, descriptionTag, optionsTag, dispatchTag, orderTag, defaultTag string
+	if parentTag != nil {
+		validateTag = parentTag.Get("ibValidate")
+		descriptionTag = parentTag.Get("ibDescription")
+		optionsTag = parentTag.Get("ibOptions")
+		dispatchTag = parentTag.Get("ibDispatch")
+		orderTag = parentTag.Get("ibOrder")
+		defaultTag = parentTag.Get("ibDefault")
+	}
+
 	vtd := new(cs.ValueTypeDescriptor)
 	vtd.Description = descriptionTag
 
@@ -105,7 +127,7 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 			for i := 0; i < sliceType.NumField(); i++ { // Iterate through all fields of the struct
 				tag := sliceType.Field(i).Tag
 				if sliceType.Field(i).Type.Kind() == reflect.Struct && sliceType.Field(i).Anonymous {
-					anoStructDescriptor := getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"), tag.Get("ibOrder"))
+					anoStructDescriptor := getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, &tag)
 					for name, typeDesc := range anoStructDescriptor.StructureSubtypes {
 						if _, exists := vtd.StructureSubtypes[name]; exists {
 							log.Fatalf("Potential struct Fieldname dupplication of field %s, ensure you have only one field with this name", name)
@@ -118,14 +140,14 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 				if _, exists := vtd.StructureSubtypes[sliceType.Field(i).Name]; exists {
 					log.Fatalf("Potential struct Fieldname dupplication of field %s, ensure you have only one field with this name", sliceType.Field(i).Name)
 				}
-				vtd.StructureSubtypes[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"), tag.Get("ibOrder"))
+				vtd.StructureSubtypes[sliceType.Field(i).Name] = getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, &tag)
 			}
 		} else {
 			//if dispatchTag != "" {
 			//	log.Fatal("can not use dispatch tag on other fields than structured array")
 			//}
 			vtd.Type = cs.ValueType_Array
-			vtd.ArraySubType = getTypeDescriptor(sliceType, fieldName, validateTag, descriptionTag, optionsTag, dispatchTag, orderTag)
+			vtd.ArraySubType = getTypeDescriptor(sliceType, fieldName, parentTag)
 		}
 		return vtd
 	} else if typeName.Kind() == reflect.Struct {
@@ -140,7 +162,7 @@ func getTypeDescriptor(typeName reflect.Type, fieldName, validateTag, descriptio
 	if optionsTag != "" { // could check for string here
 		vtd.Options = strings.Split(optionsTag, ",")
 	}
-	vtd.Type = getType(typeName.Name(), fieldName, validateTag, optionsTag, dispatchTag)
+	vtd.Type, vtd.Default = getType(typeName.Name(), fieldName, validateTag, optionsTag, dispatchTag, defaultTag)
 	return vtd
 }
 
@@ -152,52 +174,63 @@ func structTypeDescriptor(field reflect.Type) *cs.ValueTypeDescriptor {
 		subField := field.Field(i)
 
 		tag := subField.Tag
-		vtd.StructureSubtypes[subField.Name] = getTypeDescriptor(subField.Type, subField.Name, tag.Get("ibValidate"), tag.Get("ibDescription"), tag.Get("ibOptions"), tag.Get("ibDispatch"), tag.Get("ibOrder"))
+		vtd.StructureSubtypes[subField.Name] = getTypeDescriptor(subField.Type, subField.Name, &tag)
 	}
 
 	return vtd
 }
 
-func getType(typeName, fieldName, validateTag, optionsTag, dispatchTag string) cs.ValueType {
-	//if dispatchTag != "" {
-	//	log.Fatal("can not use dispatch tag on other fields than structured array")
-	//}
+func getType(typeName, fieldName, validateTag, optionsTag, dispatchTag, defaultTag string) (vt cs.ValueType, defValue interface{}) {
 	switch typeName {
 	case "string":
-		if optionsTag != "" {
-			return cs.ValueType_Select
+		if defaultTag != "" {
+			defValue = defaultTag
 		}
+
+		if optionsTag != "" {
+			return cs.ValueType_Select, defValue
+		}
+
 		switch validateTag {
 		case "":
-			return cs.ValueType_String
+			return cs.ValueType_String, defValue
 		case "ip":
-			return cs.ValueType_IP
+			return cs.ValueType_IP, defValue
 		case "password":
-			return cs.ValueType_Password
+			return cs.ValueType_Password, defValue
 		default:
 			log.Fatalf("Invalid validate '%s' tag on %s", validateTag, fieldName)
 		}
 
 	case "int", "int32", "int64", "uint32", "uint16", "uint64":
+		if defaultTag != "" {
+			defValue, _ = strconv.Atoi(defaultTag)
+		}
 		switch validateTag {
 		case "":
-			return cs.ValueType_Integer
+			return cs.ValueType_Integer, defValue
 		case "port":
-			return cs.ValueType_Port
+			return cs.ValueType_Port, defValue
 		case "unique_inc":
-			return cs.ValueType_UniqueInc
+			return cs.ValueType_UniqueInc, nil // no use for a default here
 		default:
 			log.Fatalf("Invalid validate '%s' tag on %s", validateTag, fieldName)
 		}
 	case "bool":
-		return cs.ValueType_Checkbox
+		if defaultTag == "true" {
+			defValue = true
+		}
+		return cs.ValueType_Checkbox, defValue
 	case "float32", "float64":
-		return cs.ValueType_Float
+		if defaultTag != "" {
+			defValue, _ = strconv.ParseFloat(defaultTag, 32)
+		}
+		return cs.ValueType_Float, defValue
 	default:
 		log.Fatalf("Unknown type '%s' for config field  %s", typeName, fieldName)
 	}
-	log.Error("return 0")
-	return 0
+	log.Error("getType return 0")
+	return 0, defValue
 }
 
 // Load a package config, also storing the default config and schema for ibeam-init to pick up
