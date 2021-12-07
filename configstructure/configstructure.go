@@ -22,6 +22,7 @@ const (
 
 type ValueTypeDescriptor struct {
 	Type            ValueType
+	Label           string      `json:",omitempty"`
 	Description     string      `json:",omitempty"`
 	Options         []string    `json:",omitempty"`
 	Order           int         `json:",omitempty"`
