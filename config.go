@@ -33,6 +33,10 @@ func init() {
 	}
 }
 
+func GetConfigPath() string {
+	return filepath.Join(path, coreName)
+}
+
 // Returns the current schema for a core
 func GetSchema(structure interface{}) []byte {
 	vptr := reflect.ValueOf(structure)
@@ -73,7 +77,7 @@ func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
 }
 
 func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *reflect.StructTag) *cs.ValueTypeDescriptor {
-	var validateTag, descriptionTag, optionsTag, dispatchTag, orderTag, defaultTag string
+	var validateTag, descriptionTag, optionsTag, dispatchTag, orderTag, defaultTag, labelTag string
 	if parentTag != nil {
 		validateTag = parentTag.Get("ibValidate")
 		descriptionTag = parentTag.Get("ibDescription")
@@ -81,10 +85,12 @@ func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *refle
 		dispatchTag = parentTag.Get("ibDispatch")
 		orderTag = parentTag.Get("ibOrder")
 		defaultTag = parentTag.Get("ibDefault")
+		labelTag = parentTag.Get("ibLabel")
 	}
 
 	vtd := new(cs.ValueTypeDescriptor)
 	vtd.Description = descriptionTag
+	vtd.Label = labelTag
 
 	if dispatchTag != "" {
 		vtd.DispatchOptions = strings.Split(dispatchTag, ",")
@@ -156,6 +162,7 @@ func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *refle
 		//}
 		vtd = structTypeDescriptor(typeName)
 		vtd.Description = descriptionTag
+		vtd.Label = labelTag
 		return vtd
 	}
 
