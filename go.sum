@@ -10,6 +10,8 @@ github.com/mattn/go-colorable v0.1.8/go.mod h1:u6P/XSegPjTcexA+o6vUJrdnUu04hMope
 github.com/mattn/go-isatty v0.0.12/go.mod h1:cbi8OIDigv2wuxKPP5vlRcQ1OAZbq2CE4Kysco4FUpU=
 github.com/mattn/go-isatty v0.0.13 h1:qdl+GuBjcsKKDco5BsxPJlId98mSWNKqYA+Co0SC1yA=
 github.com/mattn/go-isatty v0.0.13/go.mod h1:cbi8OIDigv2wuxKPP5vlRcQ1OAZbq2CE4Kysco4FUpU=
+github.com/oxequa/grace v0.0.0-20180330101621-d1b62e904ab2 h1:dzVjSCzXR7REzqxyB5OPgcXu3AR99isM/LdKsSL4WoM=
+github.com/oxequa/grace v0.0.0-20180330101621-d1b62e904ab2/go.mod h1:CWQBeDssj8lgsWGnWhGZUq3DAVD5GsTlvuHIxWhzthE=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/s00500/env_logger v0.1.19 h1:4F8Wdv7otN9Fjy6fdWEZs4j/wftWO62ABz0Mol7DAuk=
