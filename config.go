@@ -38,15 +38,11 @@ func GetConfigPath() string {
 }
 
 // Returns the current schema for a core
-func GetSchema(structure interface{}) []byte {
+func GetSchema(structure interface{}) *cs.ValueTypeDescriptor {
 	vptr := reflect.ValueOf(structure)
 	v := vptr.Elem()
 
-	csSchema := generateSchema(v.Type())
-
-	jsonBytes, err := json.Marshal(&csSchema)
-	log.Should(log.Wrap(err, "on getting schema"))
-	return jsonBytes
+	return generateSchema(v.Type())
 }
 
 func storeSchema(file string, structure interface{}) error {
