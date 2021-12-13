@@ -34,7 +34,10 @@ func init() {
 }
 
 func GetConfigPath() string {
-	return filepath.Join(path, coreName)
+	if env.IsSkaarOSDev() || env.IsSkaarOSProd() {
+		return filepath.Join(path, coreName)
+	}
+	return coreName + "-storage"
 }
 
 // Returns the current schema for a core
