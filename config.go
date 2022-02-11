@@ -76,7 +76,7 @@ func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
 }
 
 func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *reflect.StructTag) *cs.ValueTypeDescriptor {
-	var validateTag, descriptionTag, optionsTag, dispatchTag, orderTag, defaultTag, labelTag string
+	var validateTag, descriptionTag, optionsTag, dispatchTag, orderTag, defaultTag, labelTag, requiredTag string
 	if parentTag != nil {
 		validateTag = parentTag.Get("ibValidate")
 		descriptionTag = parentTag.Get("ibDescription")
@@ -85,10 +85,12 @@ func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *refle
 		orderTag = parentTag.Get("ibOrder")
 		defaultTag = parentTag.Get("ibDefault")
 		labelTag = parentTag.Get("ibLabel")
+		requiredTag = parentTag.Get("ibRequired")
 	}
 
 	vtd := new(cs.ValueTypeDescriptor)
 	vtd.Description = descriptionTag
+	vtd.Required = requiredTag
 	vtd.Label = labelTag
 
 	if dispatchTag != "" {
@@ -161,6 +163,7 @@ func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *refle
 		//}
 		vtd = structTypeDescriptor(typeName)
 		vtd.Description = descriptionTag
+		vtd.Required = requiredTag
 		vtd.Label = labelTag
 		return vtd
 	}
