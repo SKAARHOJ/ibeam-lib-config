@@ -28,7 +28,7 @@ type ValueTypeDescriptor struct {
 	Order           int         `json:",omitempty"`
 	DispatchOptions []string    `json:",omitempty"`
 	Default         interface{} `json:",omitempty"` // Provide a default value
-	Required        string
+	Required        string      `json:",omitempty"` // Provide a message to show if this field is not filled
 
 	ArraySubType      *ValueTypeDescriptor            `json:",omitempty"`
 	StructureSubtypes map[string]*ValueTypeDescriptor `json:",omitempty"`
