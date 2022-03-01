@@ -8,6 +8,9 @@ It dumps the config, a schema in json and a default config into the correct dire
 
 There are 3 functions provided by this library:
 
+(**NOTE:** IBeam-corelib-go provides the convenient CreateServerWithConfig helper, that automatically handles these things for you! Please use it in devicecores)
+
+
 - **SetCoreName:** Call this first setting the name of your core, eg "core-example"
 - **SetDevMode:** Call this if you are running locally and not on skaarOS (check core-template how this can be done automatically)
 - **Load** When the default config has been filled with default values pass a pointer to the structure to load. The library will automatically load the correct file, and also create it when necessary
