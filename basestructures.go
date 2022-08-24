@@ -3,12 +3,6 @@ package config
 type ibeamDeviceConfig interface {
 	mustEmbedBaseDevice()
 }
-
-// At some later point we might also use this structure as a template... but for atemproxy and others this migh not make sense
-// type BaseCoreConfig struct {
-//	Devices []ibeamDeviceConfig
-// }
-
 type BaseDeviceConfig struct {
 	Active      bool   `ibOrder:"1" ibDispatch:"active"`
 	Name        string `ibOrder:"5" ibDispatch:"name" ibDescription:""`
