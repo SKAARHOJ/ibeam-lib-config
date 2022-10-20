@@ -132,8 +132,11 @@ func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *refle
 			vtd.Type = cs.ValueType_StructureArray
 			vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
 			for i := 0; i < sliceType.NumField(); i++ { // Iterate through all fields of the struct
+				if !sliceType.Field(i).IsExported() {
+					continue
+				}
 				tag := sliceType.Field(i).Tag
-				if sliceType.Field(i).Type.Kind() == reflect.Struct && sliceType.Field(i).Anonymous && sliceType.Field(i).IsExported() {
+				if sliceType.Field(i).Type.Kind() == reflect.Struct && sliceType.Field(i).Anonymous {
 					anoStructDescriptor := getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, &tag)
 					for name, typeDesc := range anoStructDescriptor.StructureSubtypes {
 						if _, exists := vtd.StructureSubtypes[name]; exists {
