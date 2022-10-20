@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"unicode"
 
 	cs "github.com/SKAARHOJ/ibeam-lib-config/configstructure"
 	env "github.com/SKAARHOJ/ibeam-lib-env"
@@ -77,9 +76,6 @@ func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
 }
 
 func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *reflect.StructTag) *cs.ValueTypeDescriptor {
-	if len(fieldName) > 0 && !unicode.IsUpper(rune(fieldName[0])) {
-		return nil
-	}
 	var validateTag, descriptionTag, optionsTag, dispatchTag, orderTag, defaultTag, labelTag, requiredTag string
 	if parentTag != nil {
 		validateTag = parentTag.Get("ibValidate")
@@ -137,7 +133,7 @@ func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *refle
 			vtd.StructureSubtypes = make(map[string]*cs.ValueTypeDescriptor)
 			for i := 0; i < sliceType.NumField(); i++ { // Iterate through all fields of the struct
 				tag := sliceType.Field(i).Tag
-				if sliceType.Field(i).Type.Kind() == reflect.Struct && sliceType.Field(i).Anonymous {
+				if sliceType.Field(i).Type.Kind() == reflect.Struct && sliceType.Field(i).Anonymous && sliceType.Field(i).IsExported() {
 					anoStructDescriptor := getTypeDescriptor(sliceType.Field(i).Type, sliceType.Field(i).Name, &tag)
 					for name, typeDesc := range anoStructDescriptor.StructureSubtypes {
 						if _, exists := vtd.StructureSubtypes[name]; exists {
