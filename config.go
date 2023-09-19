@@ -76,13 +76,15 @@ func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
 }
 
 func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *reflect.StructTag) *cs.ValueTypeDescriptor {
-	var validateTag, descriptionTag, optionsTag, dispatchTag, orderTag, defaultTag, labelTag, requiredTag string
+	var validateTag, descriptionTag, optionsTag, dispatchTag, orderTag, defaultTag, labelTag, requiredTag, onlyOnModelTag, notOnModelTag string
 	if parentTag != nil {
 		validateTag = parentTag.Get("ibValidate")
 		descriptionTag = parentTag.Get("ibDescription")
 		optionsTag = parentTag.Get("ibOptions")
 		dispatchTag = parentTag.Get("ibDispatch")
 		orderTag = parentTag.Get("ibOrder")
+		onlyOnModelTag = parentTag.Get("ibOnlyOnModel")
+		notOnModelTag = parentTag.Get("ibNotOnModelTag")
 		defaultTag = parentTag.Get("ibDefault")
 		labelTag = parentTag.Get("ibLabel")
 		requiredTag = parentTag.Get("ibRequired")
@@ -92,6 +94,26 @@ func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *refle
 	vtd.Description = descriptionTag
 	vtd.Required = requiredTag
 	vtd.Label = labelTag
+
+	if onlyOnModelTag != "" {
+		all := strings.Split(onlyOnModelTag, ",")
+		vtd.OnlyOnModel = make([]int, len(all))
+		for i, m := range all {
+			num, err := strconv.ParseInt(m, 10, 32)
+			log.MustFatal(log.Wrap(err, "failed to validate config tag for onlyOnModel: (%s)", onlyOnModelTag))
+			vtd.OnlyOnModel[i] = int(num)
+		}
+	}
+
+	if notOnModelTag != "" {
+		all := strings.Split(notOnModelTag, ",")
+		vtd.NotOnModel = make([]int, len(all))
+		for i, m := range all {
+			num, err := strconv.ParseInt(m, 10, 32)
+			log.MustFatal(log.Wrap(err, "failed to validate config tag for notOnModel: (%s)", notOnModelTag))
+			vtd.NotOnModel[i] = int(num)
+		}
+	}
 
 	if dispatchTag != "" {
 		vtd.DispatchOptions = strings.Split(dispatchTag, ",")

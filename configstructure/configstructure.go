@@ -30,6 +30,9 @@ type ValueTypeDescriptor struct {
 	Default         interface{} `json:",omitempty"` // Provide a default value
 	Required        string      `json:",omitempty"` // Provide a message to show if this field is not filled
 
+	OnlyOnModel []int `json:",omitempty"`
+	NotOnModel  []int `json:",omitempty"`
+
 	ArraySubType      *ValueTypeDescriptor            `json:",omitempty"`
 	StructureSubtypes map[string]*ValueTypeDescriptor `json:",omitempty"`
 }
