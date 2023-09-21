@@ -83,7 +83,7 @@ func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *refle
 		dispatchTag = parentTag.Get("ibDispatch")
 		orderTag = parentTag.Get("ibOrder")
 		onlyOnModelTag = parentTag.Get("ibOnlyOnModel")
-		notOnModelTag = parentTag.Get("ibNotOnModelTag")
+		notOnModelTag = parentTag.Get("ibNotOnModel")
 		defaultTag = parentTag.Get("ibDefault")
 		labelTag = parentTag.Get("ibLabel")
 		requiredTag = parentTag.Get("ibRequired")
