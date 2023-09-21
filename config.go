@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -59,13 +58,13 @@ func storeSchema(file string, structure interface{}) error {
 	if schemaPath != "" {
 		jsonBytes, err := json.Marshal(&csSchema)
 		log.MustFatal(log.Wrap(err, "on encoding schema"))
-		return ioutil.WriteFile(filepath.Join(schemaPath, coreName+".schema.json"), jsonBytes, 0644)
+		return os.WriteFile(filepath.Join(schemaPath, coreName+".schema.json"), jsonBytes, 0644)
 	}
 
 	if !devMode {
 		jsonBytes, err := json.Marshal(&csSchema)
 		log.MustFatal(log.Wrap(err, "on encoding schema"))
-		return ioutil.WriteFile(file, jsonBytes, 0644)
+		return os.WriteFile(file, jsonBytes, 0644)
 	}
 
 	return nil
@@ -288,7 +287,7 @@ func Load(structure interface{}) error {
 		baseFileName = filepath.Join(path, coreName)
 	}
 
-	data, err := ioutil.ReadFile(baseFileName + ".toml")
+	data, err := os.ReadFile(baseFileName + ".toml")
 	if err != nil {
 		// There is a chance that file we are looking for
 		// just doesn't exist. In this case we are supposed
@@ -296,7 +295,7 @@ func Load(structure interface{}) error {
 		if saveErr := Save(structure); saveErr != nil {
 			return saveErr
 		}
-		data, err = ioutil.ReadFile(baseFileName + ".toml")
+		data, err = os.ReadFile(baseFileName + ".toml")
 		if err != nil {
 			return log.Wrap(err, "on reading after saving")
 
@@ -320,6 +319,7 @@ func Load(structure interface{}) error {
 	if err != nil {
 		return fmt.Errorf("on decoding toml: %w", err)
 	}
+
 	return nil
 }
 
@@ -345,7 +345,7 @@ func save(structure interface{}, filename string) error {
 		baseFileName = filepath.Join(path, filename)
 	}
 
-	err = ioutil.WriteFile(baseFileName+".toml", buf.Bytes(), os.ModePerm)
+	err = os.WriteFile(baseFileName+".toml", buf.Bytes(), os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("on encoding toml: %w", err)
 	}
