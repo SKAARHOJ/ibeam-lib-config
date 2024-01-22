@@ -11,8 +11,9 @@ import (
 // ValidateConfig validates a config structure against a schema, osed in different places to validate the correctness of configs.
 // It also fixes the int types that get lost by json using float64 for everything. The result is returned as cleanedValues
 // Pass strict mode to return errors when additional values are found in the config
-func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMode bool) (cleanedValue interface{}, e error) {
+func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMode bool, nameForWarnings string) (cleanedValue interface{}, e error) {
 	defer grace.Recover(&e)
+	log := log.WithField("package", nameForWarnings)
 
 	if schema == nil {
 		if strictMode {
@@ -82,7 +83,7 @@ func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMo
 				log.Warnf("config validator: value %s does not exist in schema", name)
 				continue
 			}
-			cleaned, err := ValidateConfig(schemaValue, v, strictMode)
+			cleaned, err := ValidateConfig(schemaValue, v, strictMode, nameForWarnings)
 			if err != nil {
 				return nil, fmt.Errorf("on validating %s: %w", name, err)
 			}
@@ -101,7 +102,7 @@ func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMo
 		schemaValue := schema.ArraySubType
 
 		for id, v := range valueMap {
-			cleaned, err := ValidateConfig(schemaValue, v, strictMode)
+			cleaned, err := ValidateConfig(schemaValue, v, strictMode, nameForWarnings)
 			if err != nil {
 				return nil, fmt.Errorf("on validating arrayvalue index %d: %w", id, err)
 			}
@@ -134,7 +135,7 @@ func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMo
 						log.Warnf("(structure index %d) value %s does not exist in schema", id, name)
 						continue
 					}
-					cleaned, err := ValidateConfig(schemaValue, v, strictMode)
+					cleaned, err := ValidateConfig(schemaValue, v, strictMode, nameForWarnings)
 					if err != nil {
 						return nil, fmt.Errorf("on validating %s (structure index %d): %w", name, id, err)
 					}
@@ -155,7 +156,7 @@ func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMo
 					log.Warnf("(structure index %d) value %s does not exist in schema", id, name)
 					continue
 				}
-				cleaned, err := ValidateConfig(schemaValue, v, strictMode)
+				cleaned, err := ValidateConfig(schemaValue, v, strictMode, nameForWarnings)
 				if err != nil {
 					return nil, fmt.Errorf("on validating %s (structure index %d): %w", name, id, err)
 				}

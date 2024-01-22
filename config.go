@@ -363,7 +363,12 @@ func SetDevMode(devmode bool) {
 	}
 }
 
-// SetCoreName sets the name of the core and therefore the files
+// SetName sets the name of the package and therefore the files
+func SetName(corename string) {
+	coreName = corename
+}
+
+// SetCoreName sets the name of the core and therefore the files (sane as SetName)
 func SetCoreName(corename string) {
 	coreName = corename
 }
