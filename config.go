@@ -75,9 +75,10 @@ func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
 }
 
 func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *reflect.StructTag) *cs.ValueTypeDescriptor {
-	var validateTag, descriptionTag, optionsTag, dispatchTag, orderTag, defaultTag, labelTag, requiredTag, onlyOnModelTag, notOnModelTag string
+	var validateTag, descriptionTag, optionsTag, dispatchTag, orderTag, defaultTag, labelTag, requiredTag, onlyOnModelTag, notOnModelTag, headline string
 	if parentTag != nil {
 		validateTag = parentTag.Get("ibValidate")
+		headline = parentTag.Get("ibHeadline")
 		descriptionTag = parentTag.Get("ibDescription")
 		optionsTag = parentTag.Get("ibOptions")
 		dispatchTag = parentTag.Get("ibDispatch")
@@ -102,6 +103,10 @@ func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *refle
 			log.MustFatal(log.Wrap(err, "failed to validate config tag for onlyOnModel: (%s)", onlyOnModelTag))
 			vtd.OnlyOnModel[i] = int(num)
 		}
+	}
+
+	if headline != "" {
+		vtd.Headline = headline
 	}
 
 	if notOnModelTag != "" {
