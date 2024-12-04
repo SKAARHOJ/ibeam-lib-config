@@ -183,6 +183,7 @@ func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMo
 
 		intVal, ok := intType(values)
 		if !ok {
+
 			return nil, fmt.Errorf("unique_integer is no integertype, but %T", values)
 		}
 		values = intVal
@@ -192,6 +193,9 @@ func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMo
 }
 
 func intType(values interface{}) (int, bool) {
+	if values == nil {
+		return 0, true
+	}
 	if _, ok := values.(float64); ok {
 		return int(values.(float64)), true
 	}
