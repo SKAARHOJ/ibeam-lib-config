@@ -29,6 +29,7 @@ type ValueTypeDescriptor struct {
 	DispatchOptions []string    `json:",omitempty"`
 	Default         interface{} `json:",omitempty"` // Provide a default value
 	Required        string      `json:",omitempty"` // Provide a message to show if this field is not filled
+	Hidden          string      `json:",omitempty"` // hide this, should match "true"
 
 	Headline string `json:",omitempty"` // Add a headline before
 

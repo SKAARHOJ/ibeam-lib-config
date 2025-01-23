@@ -31,7 +31,8 @@ Then create a config structure. Fieldnames become labels in the skaarOS webui. U
 * **Special Flags for Reactor**  To indicate certain files for reactor use: `ibDispatch:"devices"`, all possible options are currently: `devices`, `active`, `modelid` (creates model selector on cores), `deviceid`, `description`, `ip` `port`
 * **Filter for Models**: use `ibOnlyOnModel` and `ibNotOnModel` with a comma seperated list of model ids to hide these fields in the UI. Keep in mind that due to older config entries there could still be values in these fields also for models that do not have them. This might cause confusion, so avoid parsing them on models that are not valid
 * **Headline**: use `ibHeadline` to set a text that will be displayed above the field it's attached to. this also includes a separator line
- 
+* **Hidden Configuration**: use `ibHidden:"true"` to completely hide an element. this can be usefull to store data in the config structure and therefore in reactors project without directly showing it.
+
 Create a default instance of your config structure. If it needs to be used on multiple go routines use a **sync.Mutex** to properly protect it (Always check your core with the race detector `go run --race .`)
 
 ## Other notes
