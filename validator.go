@@ -24,7 +24,7 @@ func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMo
 
 	switch schema.Type {
 	case cs.ValueType_Unknown:
-		log.Warn("found unknown type in config!")
+		log.Debug("found unknown type in config!")
 
 	case cs.ValueType_Integer:
 		intVal, ok := intType(values)
@@ -80,7 +80,7 @@ func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMo
 				if strictMode {
 					return nil, fmt.Errorf("value %s does not exist in schema", name)
 				}
-				log.Warnf("config validator: value %s does not exist in schema", name)
+				log.Debugf("config validator: value %s does not exist in schema", name)
 				continue
 			}
 			cleaned, err := ValidateConfig(schemaValue, v, strictMode, nameForWarnings)
@@ -132,7 +132,7 @@ func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMo
 						if strictMode {
 							return nil, fmt.Errorf("(structure index %d) value %s does not exist in schema", id, name)
 						}
-						log.Warnf("(structure index %d) value %s does not exist in schema", id, name)
+						log.Debugf("(structure index %d) value %s does not exist in schema", id, name)
 						continue
 					}
 					cleaned, err := ValidateConfig(schemaValue, v, strictMode, nameForWarnings)
@@ -153,7 +153,7 @@ func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMo
 					if strictMode {
 						return nil, fmt.Errorf("(structure index %d) value %s does not exist in schema", id, name)
 					}
-					log.Warnf("(structure index %d) value %s does not exist in schema", id, name)
+					log.Debugf("(structure index %d) value %s does not exist in schema", id, name)
 					continue
 				}
 				cleaned, err := ValidateConfig(schemaValue, v, strictMode, nameForWarnings)
