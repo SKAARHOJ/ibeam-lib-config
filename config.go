@@ -77,6 +77,12 @@ func generateSchema(v reflect.Type) *cs.ValueTypeDescriptor { // If fail: fatal
 func getTypeDescriptor(typeName reflect.Type, fieldName string, parentTag *reflect.StructTag) *cs.ValueTypeDescriptor {
 	var validateTag, descriptionTag, optionsTag, dispatchTag, hiddenTag, orderTag, defaultTag, labelTag, requiredTag, onlyOnModelTag, notOnModelTag, headline string
 	if parentTag != nil {
+		if parentTag.Get("json") == "-" {
+			return nil
+		}
+		if parentTag.Get("toml") == "-" {
+			return nil
+		}
 		validateTag = parentTag.Get("ibValidate")
 		headline = parentTag.Get("ibHeadline")
 		descriptionTag = parentTag.Get("ibDescription")
