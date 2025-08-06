@@ -19,6 +19,7 @@ import (
 )
 
 var devMode bool = false
+var SAGuiMode bool = false
 
 const skaarOSpath string = "/var/ibeam/config"
 
@@ -33,6 +34,9 @@ func init() {
 }
 
 func GetConfigPath() string {
+	if SAGuiMode {
+		return path
+	}
 	if env.IsSkaarOSDev() || env.IsSkaarOSProd() {
 		return filepath.Join(path, coreName)
 	}
@@ -372,6 +376,22 @@ func SetDevMode(devmode bool) {
 	devMode = devmode
 	if devMode {
 		path = ""
+	} else {
+		path = skaarOSpath
+	}
+}
+
+// SetSAGUIMode activates the standard-alone GUI mode path configuration (Mac OS, Windows, Linux delivered as a signed Wails application for example)
+func SetSAGUIMode(saGuiMode bool) {
+	SAGuiMode = saGuiMode
+	if SAGuiMode {
+		configDir, err := os.UserConfigDir()
+		log.Must(err)
+		configDir = filepath.Join(configDir, "com.skaarhoj."+coreName)
+		err = os.MkdirAll(configDir, 0755) // Make sure the directory exists
+		log.Must(err)
+
+		path = configDir
 	} else {
 		path = skaarOSpath
 	}
