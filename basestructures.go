@@ -12,3 +12,4 @@ type BaseDeviceConfig struct {
 }
 
 func (b BaseDeviceConfig) mustEmbedBaseDevice() {}
+func (b BaseDeviceConfig) GetDeviceID() uint32    { return b.DeviceID }
