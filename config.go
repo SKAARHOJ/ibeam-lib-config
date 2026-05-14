@@ -34,6 +34,9 @@ func init() {
 }
 
 func GetConfigPath() string {
+	if override := os.Getenv("IBEAM_CONFIG_DIR"); override != "" {
+		return override
+	}
 	if SAGuiMode {
 		return path
 	}
@@ -284,26 +287,39 @@ func getType(typeName, fieldName, validateTag, optionsTag, dispatchTag, defaultT
 	return 0, defValue
 }
 
+// configBaseFileName returns the base path (without ".toml") for the given
+// filename. Resolution order: IBEAM_CONFIG_DIR override (used by supervisors
+// to pin a process to a private config snapshot) > skaarOS production path >
+// dev-mode cwd-relative path.
+func configBaseFileName(filename string) string {
+	if override := os.Getenv("IBEAM_CONFIG_DIR"); override != "" {
+		return filepath.Join(override, filename)
+	}
+	if devMode {
+		return filepath.Join(path, filename)
+	}
+	return filepath.Join(path, coreName, filename)
+}
+
 // Load a package config, also storing the default config and schema for ibeam-init to pick up
 func Load(structure interface{}) error {
 	if coreName == "" {
 		log.Panic("no corename set")
 	}
-	// then it checks if the config exists, if not store default config
-	// Then load config
 
-	// check for the config dir, create if it does not exist
-	if !devMode {
+	if override := os.Getenv("IBEAM_CONFIG_DIR"); override != "" {
+		if _, err := os.Stat(override); os.IsNotExist(err) {
+			err := os.MkdirAll(override, 0700)
+			log.Should(err)
+		}
+	} else if !devMode {
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			err := os.MkdirAll(filepath.Join(path, coreName), 0700)
 			log.Should(err)
 		}
 	}
 
-	baseFileName := filepath.Join(path, coreName, coreName)
-	if devMode {
-		baseFileName = filepath.Join(path, coreName)
-	}
+	baseFileName := configBaseFileName(coreName)
 
 	data, err := os.ReadFile(baseFileName + ".toml")
 	if err != nil {
@@ -358,10 +374,7 @@ func save(structure interface{}, filename string) error {
 		return fmt.Errorf("on encoding toml: %w", err)
 	}
 
-	baseFileName := filepath.Join(path, coreName, filename)
-	if devMode {
-		baseFileName = filepath.Join(path, filename)
-	}
+	baseFileName := configBaseFileName(filename)
 
 	err = os.WriteFile(baseFileName+".toml", buf.Bytes(), os.ModePerm)
 	if err != nil {
