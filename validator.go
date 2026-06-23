@@ -2,17 +2,29 @@ package config
 
 import (
 	"fmt"
+	"runtime/debug"
 
 	cs "github.com/SKAARHOJ/ibeam-lib-config/configstructure"
-	"github.com/oxequa/grace"
 	log "github.com/s00500/env_logger"
 )
+
+// recoverValidation turns a panic during validation into an error (including a
+// stack trace) stored in *e. It must be called directly as a deferred function
+// so that its recover() catches a panic in the calling function.
+//
+// This replaces github.com/oxequa/grace's Recover so this module carries no
+// GPL-licensed dependencies.
+func recoverValidation(e *error) {
+	if r := recover(); r != nil {
+		*e = fmt.Errorf("panic during config validation: %v\n%s", r, debug.Stack())
+	}
+}
 
 // ValidateConfig validates a config structure against a schema, osed in different places to validate the correctness of configs.
 // It also fixes the int types that get lost by json using float64 for everything. The result is returned as cleanedValues
 // Pass strict mode to return errors when additional values are found in the config
 func ValidateConfig(schema *cs.ValueTypeDescriptor, values interface{}, strictMode bool, nameForWarnings string) (cleanedValue interface{}, e error) {
-	defer grace.Recover(&e)
+	defer recoverValidation(&e)
 	log := log.WithField("package", nameForWarnings)
 
 	if schema == nil {
